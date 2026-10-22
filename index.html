@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNEAKER — Scroll Experience</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #00e5ff;
+      --accent2: #ff3d71;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 3rem;
+      background: linear-gradient(to bottom, rgba(0,0,0,.85) 0%, transparent 100%);
+      backdrop-filter: blur(4px);
+    }
+    .nav-logo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: .15em;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      color: rgba(255,255,255,.7);
+      text-decoration: none;
+      font-size: .85rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ── HERO ── */
+    #hero {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 60%, rgba(0,229,255,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-size: .75rem;
+      letter-spacing: .35em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.2rem;
+    }
+    .hero-title {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -.02em;
+      background: linear-gradient(135deg, #fff 40%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+    }
+    .hero-sub {
+      font-size: 1rem;
+      color: rgba(255,255,255,.5);
+      letter-spacing: .06em;
+      margin-bottom: 2.8rem;
+    }
+    .hero-cta {
+      display: inline-block;
+      padding: .85rem 2.4rem;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      font-size: .8rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      transition: background .25s, color .25s;
+      border-radius: 2px;
+    }
+    .hero-cta:hover { background: var(--accent); color: #000; }
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .5rem;
+      color: rgba(255,255,255,.35);
+      font-size: .7rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      animation: bounce 2s infinite;
+    }
+    .scroll-hint svg { width: 18px; opacity: .5; }
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(6px); }
+    }
+
+    /* ── SCROLL SECTION ── */
+    .scroll-section {
+      position: relative;
+    }
+    /* Sticky pin wrapper — tall enough for full scroll journey */
+    .sticky-wrapper {
+      height: 400vh; /* 300 frames / 30fps * comfort scroll */
+      position: relative;
+    }
+    .sticky-content {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* Section overlay labels */
+    .section-label {
+      position: absolute;
+      top: 50%;
+      left: 5%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .section-label .s-num {
+      font-size: .7rem;
+      letter-spacing: .3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+    .section-label h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -.01em;
+      max-width: 12ch;
+    }
+    .section-label p {
+      margin-top: .8rem;
+      font-size: .85rem;
+      color: rgba(255,255,255,.45);
+      max-width: 22ch;
+      line-height: 1.6;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--accent);
+      width: 0%;
+      transition: width .05s linear;
+      z-index: 20;
+    }
+
+    /* Section divider glow */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: .3;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #000;
+      text-align: center;
+      padding: 4rem 2rem;
+      color: rgba(255,255,255,.25);
+      font-size: .75rem;
+      letter-spacing: .1em;
+    }
+    footer strong { color: var(--accent); font-size: 1.2rem; letter-spacing: .3em; display: block; margin-bottom: 1rem; }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity .6s ease;
+    }
+    #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loader-text {
+      font-size: .8rem;
+      letter-spacing: .3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .loader-bar-bg {
+      width: 260px;
+      height: 2px;
+      background: rgba(255,255,255,.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .loader-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width .1s linear;
+      border-radius: 2px;
+    }
+    .loader-pct {
+      margin-top: .8rem;
+      font-size: .7rem;
+      color: rgba(255,255,255,.3);
+      letter-spacing: .15em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="loader-text">Loading frames</div>
+  <div class="loader-bar-bg"><div class="loader-bar-fill" id="loader-fill"></div></div>
+  <div class="loader-pct" id="loader-pct">0%</div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">SN<span>K</span>R</div>
+  <ul class="nav-links">
+    <li><a href="#section-1">Explore</a></li>
+    <li><a href="#section-2">Scan</a></li>
+    <li><a href="#section-3">Studio</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section id="hero">
+  <p class="hero-eyebrow">New Collection 2026</p>
+  <h1 class="hero-title">THE FUTURE<br>OF STEP</h1>
+  <p class="hero-sub">Engineered for performance. Designed for the unknown.</p>
+  <a href="#section-1" class="hero-cta">Experience Now</a>
+  <div class="scroll-hint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 5v14M5 12l7 7 7-7"/>
+    </svg>
+    Scroll
+  </div>
+</section>
+
+<!-- SECTION 1 : Camera Moving Along Sneaker -->
+<div class="divider"></div>
+<section class="scroll-section" id="section-1">
+  <div class="sticky-wrapper" id="wrapper-1">
+    <div class="sticky-content">
+      <canvas id="canvas-1" width="1280" height="720"></canvas>
+      <div class="section-label">
+        <p class="s-num">01 / 03</p>
+        <h2>Every Angle Matters</h2>
+        <p>A journey around the silhouette. Crafted detail by detail.</p>
+      </div>
+      <div class="progress-bar" id="bar-1"></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 2 : Laser Scan -->
+<section class="scroll-section" id="section-2">
+  <div class="sticky-wrapper" id="wrapper-2">
+    <div class="sticky-content">
+      <canvas id="canvas-2" width="1280" height="720"></canvas>
+      <div class="section-label">
+        <p class="s-num">02 / 03</p>
+        <h2>Precision Scanned</h2>
+        <p>Laser-accurate. Every millimeter mapped to perfection.</p>
+      </div>
+      <div class="progress-bar" id="bar-2"></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 3 : Studio Rotation -->
+<section class="scroll-section" id="section-3">
+  <div class="sticky-wrapper" id="wrapper-3">
+    <div class="sticky-content">
+      <canvas id="canvas-3" width="1280" height="720"></canvas>
+      <div class="section-label">
+        <p class="s-num">03 / 03</p>
+        <h2>Studio Pure</h2>
+        <p>360° studio showcase. Nothing hidden. Everything revealed.</p>
+      </div>
+      <div class="progress-bar" id="bar-3"></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Footer -->
+<footer>
+  <strong>SNKR</strong>
+  &copy; 2026 · The Future of Step · All Rights Reserved
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIGURATION
+// ─────────────────────────────────────────────
+// Auto-detect: use absolute file:// path when opened directly, relative when served via HTTP
+const BASE = location.protocol === "file:"
+  ? "file:///C:/Users/hp/Downloads/extracted_frames_30fps%20(1)/extracted_frames_30fps"
+  : "/extracted_frames_30fps (1)/extracted_frames_30fps";
+
+const SEQUENCES = [
+  {
+    id: 1,
+    folder: "Camera_moving_along_black_sneaker_20261021213637",
+    frames: 300,
+    canvasId: "canvas-1",
+    wrapperId: "wrapper-1",
+    barId: "bar-1",
+  },
+  {
+    id: 2,
+    folder: "Sneaker_rotates_with_laser_scan_20261021213625",
+    frames: 300,
+    canvasId: "canvas-2",
+    wrapperId: "wrapper-2",
+    barId: "bar-2",
+  },
+  {
+    id: 3,
+    folder: "Sneaker_rotating_in_studio_20261021213900",
+    frames: 300,
+    canvasId: "canvas-3",
+    wrapperId: "wrapper-3",
+    barId: "bar-3",
+  },
+];
+
+// Frame filename helper → "frame_0001.jpg"
+function frameUrl(seq, n) {
+  const pad = String(n).padStart(4, "0");
+  return `${BASE}/${seq.folder}/frame_${pad}.jpg`;
+}
+
+// ─────────────────────────────────────────────
+//  IMAGE LOADING
+// ─────────────────────────────────────────────
+const imageCache = {}; // seq.id → Image[]
+
+let totalFrames = SEQUENCES.reduce((s, q) => s + q.frames, 0);
+let loadedCount = 0;
+
+const loaderFill = document.getElementById("loader-fill");
+const loaderPct = document.getElementById("loader-pct");
+const loadingOverlay = document.getElementById("loading-overlay");
+
+function onFrameLoaded() {
+  loadedCount++;
+  const pct = Math.round((loadedCount / totalFrames) * 100);
+  loaderFill.style.width = pct + "%";
+  loaderPct.textContent = pct + "%";
+  if (loadedCount >= totalFrames) {
+    loadingOverlay.classList.add("hidden");
+    init();
+  }
+}
+
+function preloadAll() {
+  SEQUENCES.forEach((seq) => {
+    imageCache[seq.id] = [];
+    for (let i = 1; i <= seq.frames; i++) {
+      const img = new Image();
+      img.src = frameUrl(seq, i);
+      img.onload = onFrameLoaded;
+      img.onerror = onFrameLoaded; // count errors too so we don't hang
+      imageCache[seq.id].push(img);
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+//  CANVAS RENDERING
+// ─────────────────────────────────────────────
+const ctxMap = {};
+
+function setupCanvases() {
+  SEQUENCES.forEach((seq) => {
+    const canvas = document.getElementById(seq.canvasId);
+    // Resize canvas to fill viewport, maintain 16:9
+    resizeCanvas(canvas);
+    ctxMap[seq.id] = canvas.getContext("2d");
+  });
+}
+
+function resizeCanvas(canvas) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  // 16:9 fit inside viewport
+  const aspectW = 1280, aspectH = 720;
+  let w = vw, h = vw * aspectH / aspectW;
+  if (h > vh) { h = vh; w = vh * aspectW / aspectH; }
+  canvas.style.width = w + "px";
+  canvas.style.height = h + "px";
+}
+
+function drawFrame(seqId, frameIndex) {
+  const ctx = ctxMap[seqId];
+  const canvas = ctx.canvas;
+  const img = imageCache[seqId][frameIndex];
+  // Guard: skip broken or not-yet-loaded images
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+}
+
+// ─────────────────────────────────────────────
+//  SCROLL LOGIC
+// ─────────────────────────────────────────────
+let currentFrames = {};
+
+function getScrollProgress(wrapperId) {
+  const wrapper = document.getElementById(wrapperId);
+  if (!wrapper) return 0;
+  const rect = wrapper.getBoundingClientRect();
+  const total = wrapper.offsetHeight - window.innerHeight;
+  const scrolled = -rect.top;
+  return Math.max(0, Math.min(1, scrolled / total));
+}
+
+function onScroll() {
+  SEQUENCES.forEach((seq) => {
+    const progress = getScrollProgress(seq.wrapperId);
+    const frameIndex = Math.min(
+      Math.floor(progress * (seq.frames - 1)),
+      seq.frames - 1
+    );
+    if (currentFrames[seq.id] !== frameIndex) {
+      currentFrames[seq.id] = frameIndex;
+      drawFrame(seq.id, frameIndex);
+    }
+    // Update progress bar
+    const bar = document.getElementById(seq.barId);
+    if (bar) bar.style.width = (progress * 100) + "%";
+  });
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+function init() {
+  setupCanvases();
+  // Draw first frame of each sequence
+  SEQUENCES.forEach((seq) => {
+    currentFrames[seq.id] = 0;
+    drawFrame(seq.id, 0);
+  });
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", () => {
+    SEQUENCES.forEach((seq) => {
+      const canvas = document.getElementById(seq.canvasId);
+      resizeCanvas(canvas);
+      drawFrame(seq.id, currentFrames[seq.id] || 0);
+    });
+  });
+  onScroll();
+}
+
+// Start preloading
+preloadAll();
+</script>
+</body>
+</html>
